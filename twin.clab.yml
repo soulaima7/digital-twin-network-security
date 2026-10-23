@@ -1,0 +1,91 @@
+# =====================================================================
+#  Digital Twin for Network Security - Topologie Containerlab (Phase 1)
+#  Deploiement :  make deploy SCENARIO=baseline   (ou hardened)
+# =====================================================================
+name: twin
+
+mgmt:
+  network: twin-mgmt
+  ipv4-subnet: 172.20.20.0/24          # reseau de gestion (supervision uniquement)
+
+topology:
+  defaults:
+    kind: linux
+    cap-add: [NET_ADMIN, NET_RAW]
+
+  nodes:
+    # ---------------- Pare-feu / routeur central ----------------
+    fw:
+      image: twin/fw
+      mgmt-ipv4: 172.20.20.2
+      sysctls:
+        net.ipv4.ip_forward: 1
+      binds:
+        - configs/${SCENARIO:=baseline}/nftables.conf:/etc/nftables.conf:ro
+        - logs:/var/log/suricata
+      exec:
+        # Trunk 802.1Q vers le switch : une sous-interface par VLAN
+        - ip link add link eth1 name eth1.10 type vlan id 10
+        - ip link add link eth1 name eth1.20 type vlan id 20
+        - ip link set eth1 up
+        - ip link set eth1.10 up
+        - ip link set eth1.20 up
+        - ip link set eth2 up
+        - ip addr add 10.10.10.1/24 dev eth1.10     # passerelle LAN  (VLAN 10)
+        - ip addr add 10.10.20.1/24 dev eth1.20     # passerelle DMZ  (VLAN 20)
+        - ip addr add 10.10.30.1/24 dev eth2        # passerelle ATK  (WAN)
+        - nft -f /etc/nftables.conf
+
+    # ---------------- Switch L2 avec VLANs ----------------
+    sw:
+      image: twin/sw
+      mgmt-ipv4: 172.20.20.6
+      exec:
+        # Bridge Linux "VLAN-aware" (equivalent d'un switch manageable)
+        - ip link add br0 type bridge vlan_filtering 1 vlan_default_pvid 0
+        - ip link set eth1 master br0
+        - ip link set eth2 master br0
+        - ip link set eth3 master br0
+        # eth1 = trunk vers fw (VLANs 10 et 20 tagues)
+        - bridge vlan add dev eth1 vid 10
+        - bridge vlan add dev eth1 vid 20
+        # eth2 = port d'acces VLAN 10 (LAN) / eth3 = port d'acces VLAN 20 (DMZ)
+        - bridge vlan add dev eth2 vid 10 pvid untagged
+        - bridge vlan add dev eth3 vid 20 pvid untagged
+        - ip link set eth1 up
+        - ip link set eth2 up
+        - ip link set eth3 up
+        - ip link set br0 up
+
+    # ---------------- Zone DMZ (VLAN 20) ----------------
+    web:
+      image: twin/web
+      mgmt-ipv4: 172.20.20.3
+      exec:
+        - ip addr add 10.10.20.10/24 dev eth1
+        - ip link set eth1 up
+        - ip route add 10.10.0.0/16 via 10.10.20.1
+
+    # ---------------- Zone LAN (VLAN 10) ----------------
+    client:
+      image: twin/client
+      mgmt-ipv4: 172.20.20.4
+      exec:
+        - ip addr add 10.10.10.10/24 dev eth1
+        - ip link set eth1 up
+        - ip route add 10.10.0.0/16 via 10.10.10.1
+
+    # ---------------- Zone ATK (simule Internet) ----------------
+    attacker:
+      image: twin/attacker
+      mgmt-ipv4: 172.20.20.5
+      exec:
+        - ip addr add 10.10.30.10/24 dev eth1
+        - ip link set eth1 up
+        - ip route add 10.10.0.0/16 via 10.10.30.1
+
+  links:
+    - endpoints: ["fw:eth1", "sw:eth1"]         # trunk 802.1Q (VLAN 10, 20)
+    - endpoints: ["sw:eth2", "client:eth1"]     # acces VLAN 10 - LAN
+    - endpoints: ["sw:eth3", "web:eth1"]        # acces VLAN 20 - DMZ
+    - endpoints: ["fw:eth2", "attacker:eth1"]   # lien WAN - zone ATK

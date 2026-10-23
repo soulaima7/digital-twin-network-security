@@ -1,0 +1,8 @@
+clab-twin/
+.twin.clab.yml.bak
+logs/*
+!logs/.gitkeep
+results/*
+!results/.gitkeep
+__pycache__/
+*.pyc
