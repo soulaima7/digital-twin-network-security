@@ -16,7 +16,7 @@ ATTACKER_IP=10.10.30.10
 WEB_IP=10.10.20.10
 
 echo "=== 1) Verification : Suricata et auto-ban actifs sur fw ==="
-if ! docker exec "$P-fw" pgrep -x suricata >/dev/null 2>&1; then
+if ! docker exec "$P-fw" pgrep -f suricata >/dev/null 2>&1; then
   echo "ECHEC : Suricata ne tourne pas sur fw (SCENARIO=hardened ? make deploy SCENARIO=hardened)"
   exit 1
 fi
