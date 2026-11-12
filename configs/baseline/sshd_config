@@ -1,0 +1,15 @@
+# =====================================================================
+#  Scenario BASELINE - SSH volontairement faible
+#  - Authentification par mot de passe autorisee
+#  - Compte de test avec mot de passe faible (testuser / password123)
+#  - Root autorise par mot de passe (mauvaise pratique, assumee pour le labo)
+#  - Aucune limite serieuse de tentatives
+# =====================================================================
+Port 22
+PermitRootLogin yes
+PasswordAuthentication yes
+PubkeyAuthentication yes
+MaxAuthTries 6
+X11Forwarding no
+PrintMotd no
+Subsystem sftp /usr/lib/openssh/sftp-server

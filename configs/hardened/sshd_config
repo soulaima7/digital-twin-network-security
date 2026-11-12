@@ -1,0 +1,18 @@
+# =====================================================================
+#  Scenario DURCI - SSH par cle uniquement
+#  - Authentification par mot de passe desactivee (cle publique seule)
+#  - Connexion root desactivee
+#  - MaxAuthTries reduit a 3 (ralentit le brute force avant la coupure TCP)
+# =====================================================================
+Port 22
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+ChallengeResponseAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile /etc/ssh/authorized_keys/%u
+MaxAuthTries 3
+LoginGraceTime 20
+X11Forwarding no
+PrintMotd no
+Subsystem sftp /usr/lib/openssh/sftp-server

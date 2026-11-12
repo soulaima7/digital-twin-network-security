@@ -1,0 +1,80 @@
+%YAML 1.1
+---
+# =====================================================================
+#  Digital Twin for Network Security - configuration Suricata (nœud fw)
+#  Semaine 3 : detection d'intrusion + auto-ban.
+#  Capture af-packet sur les 3 interfaces de donnees du pare-feu :
+#    eth1.10 (LAN, VLAN 10) / eth1.20 (DMZ, VLAN 20) / eth2 (ATK, WAN)
+#  Le reseau de gestion (eth0, 172.20.20.0/24) n'est PAS surveille :
+#  il contourne volontairement le pare-feu (supervision uniquement).
+#  Ce fichier est identique pour les deux scenarios ; seul le fait de
+#  lancer Suricata ou non depend de SCENARIO (voir images/fw/start.sh).
+# =====================================================================
+
+vars:
+  address-groups:
+    HOME_NET: "[10.10.10.0/24,10.10.20.0/24]"   # LAN + DMZ = reseau protege
+    EXTERNAL_NET: "!$HOME_NET"                   # ATK (10.10.30.0/24) = "Internet"
+    HTTP_SERVERS: "[10.10.20.10]"
+    SSH_SERVERS: "[10.10.20.10]"
+  port-groups:
+    HTTP_PORTS: "80"
+    SSH_PORTS: "22"
+
+default-log-dir: /var/log/suricata/
+
+# Les metriques exposees a Prometheus (semaine 4) sont calculees par
+# ai/exporter.py a partir de eve.json et de results/ban.log, pas des
+# statistiques internes de Suricata : inutile de les activer ici.
+stats:
+  enabled: no
+
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert:
+            payload: no
+            http-body: no
+            tagged-packets: yes
+        - flow
+
+logging:
+  default-log-level: notice
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        filename: /var/log/suricata/suricata.log
+
+af-packet:
+  - interface: eth1.10
+    cluster-id: 10
+    cluster-type: cluster_flow
+    defrag: yes
+  - interface: eth1.20
+    cluster-id: 20
+    cluster-type: cluster_flow
+    defrag: yes
+  - interface: eth2
+    cluster-id: 30
+    cluster-type: cluster_flow
+    defrag: yes
+
+default-rule-path: /var/lib/suricata/rules
+rule-files:
+  - suricata.rules   # genere au build par suricata-update (regles ET Open)
+
+classification-file: /etc/suricata/classification.config
+reference-config-file: /etc/suricata/reference.config
+
+threading:
+  set-cpu-affinity: no
+
+detect-engine:
+  - profile: medium
+  - sgh-mpm-context: auto
+  - inspection-recursion-limit: 3000
