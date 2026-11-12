@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "deb http://deb.debian.org/debian bookworm-backports main" \
          > /etc/apt/sources.list.d/backports.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends -t bookworm-backports suricata \
+    && apt-get install -y --no-install-recommends -t bookworm-backports suricata suricata-update \
     && rm -rf /var/lib/apt/lists/* \
     && suricata-update enable-source et/open \
     && suricata-update
