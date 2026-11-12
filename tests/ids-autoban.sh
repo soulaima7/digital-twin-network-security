@@ -28,7 +28,7 @@ echo "OK : suricata + autoban.py actifs"
 
 echo
 echo "=== 2) Scan nmap depuis l'attaquant (declenche les alertes) ==="
-docker exec "$P-attacker" nmap -sS -T4 -p 1-2000 "$WEB_IP" >/tmp/nmap-ids-test.log 2>&1
+docker exec "$P-attacker" nmap -sS -T4 -p 1-10000 "$WEB_IP" >/tmp/nmap-ids-test.log 2>&1
 tail -5 /tmp/nmap-ids-test.log
 
 echo
