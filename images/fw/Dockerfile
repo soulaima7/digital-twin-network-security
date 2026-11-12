@@ -4,6 +4,9 @@
 # ce qui permet un fonctionnement totalement hors ligne une fois l'image
 # construite (cahier des charges 4.4). Needs internet access at build time.
 #
+# Suricata n'est pas dans les depots "main" de Debian 12 (bookworm) ; il
+# n'est disponible que via bookworm-backports.
+#
 # configs/suricata/suricata.yaml et ai/autoban.py NE SONT PAS copies ici :
 # comme nftables.conf, ils sont montes par Containerlab (twin.clab.yml), afin
 # que l'image reste strictement identique entre les deux scenarios -- seul
@@ -11,8 +14,11 @@
 FROM debian:12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       iproute2 iputils-ping traceroute nftables tcpdump ethtool procps \
-      prometheus-node-exporter \
-      suricata python3 ca-certificates \
+      prometheus-node-exporter ca-certificates python3 \
+    && echo "deb http://deb.debian.org/debian bookworm-backports main" \
+         > /etc/apt/sources.list.d/backports.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends -t bookworm-backports suricata \
     && rm -rf /var/lib/apt/lists/* \
     && suricata-update enable-source et/open \
     && suricata-update
