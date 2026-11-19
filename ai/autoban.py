@@ -17,6 +17,13 @@ Le client LAN (10.10.10.10) est en liste de confiance : il ne sera jamais
 banni, meme s'il declenche des alertes (faux positifs du generateur de
 trafic normal par exemple).
 
+Dedoublonnage : Suricata ecoute eth2 (ATK) ET eth1.20 (DMZ). Une connexion
+autorisee de l'attaquant vers web (ports 22/80/443) traverse les deux
+interfaces et peut donc produire la meme alerte deux fois, avec deux flow_id
+differents. Une alerte identique (meme connexion, meme regle) recue moins de
+2 secondes apres la premiere est ignoree, pour que le seuil de 5 compte des
+evenements reels et non des copies.
+
 Ce script n'a de sens qu'en scenario DURCI : le set nftables "banned"
 n'existe que dans configs/hardened/nftables.conf. Il est lance par
 images/fw/start.sh uniquement quand SCENARIO=hardened.
@@ -35,6 +42,7 @@ ALERT_THRESHOLD = 5          # nombre d'alertes ...
 WINDOW_SECONDS = 60          # ... dans cette fenetre glissante ...
 BAN_TIMEOUT_NFT = "15m"      # ... declenche un bannissement de 15 minutes
 BAN_TIMEOUT_SECONDS = 15 * 60
+DEDUP_SECONDS = 2            # meme alerte vue sur 2 interfaces -> comptee 1 fois
 
 NFT_TABLE = "inet filter"
 NFT_SET = "banned"
@@ -119,6 +127,10 @@ def main() -> None:
     alert_times: dict[str, deque] = defaultdict(deque)
     already_banned: dict[str, float] = {}  # src_ip -> epoch du bannissement
 
+    # Dedoublonnage : (src_ip, src_port, dest_ip, dest_port, signature_id)
+    # -> epoch de la premiere fois ou cette alerte a ete comptee
+    recent_keys: dict[tuple, float] = {}
+
     for raw_line in tail_f(EVE_JSON):
         raw_line = raw_line.strip()
         if not raw_line:
@@ -136,6 +148,19 @@ def main() -> None:
             continue
 
         now = time.time()
+
+        # Meme connexion + meme regle deja comptee il y a moins de 2 s :
+        # c'est la copie capturee sur l'autre interface -> ignoree
+        key = (src_ip, event.get("src_port"), event.get("dest_ip"),
+               event.get("dest_port"), event.get("alert", {}).get("signature_id"))
+        for k, t in list(recent_keys.items()):
+            if now - t > DEDUP_SECONDS:
+                del recent_keys[k]
+        if key in recent_keys:
+            log(f"doublon ignore src={src_ip} dport={event.get('dest_port')} "
+                f"iface={event.get('in_iface', '?')}")
+            continue
+        recent_keys[key] = now
 
         # Un bannissement local expire : on repart sur une fenetre propre
         if src_ip in already_banned and now - already_banned[src_ip] > BAN_TIMEOUT_SECONDS:
@@ -173,3 +198,4 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         sys.exit(0)
+
