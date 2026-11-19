@@ -12,7 +12,7 @@ if [ "$SCENARIO" = "hardened" ]; then
 
   # suricata.yaml et le set de regles ET Open sont deja dans l'image/mount ;
   # -D demonise Suricata en arriere-plan.
-  suricata -c /etc/suricata/suricata.yaml --af-packet -D
+  suricata -c /etc/suricata/suricata.yaml --af-packet -k none -D
 
   # Attend que Suricata ait cree eve.json avant de lancer l'auto-ban (30s max)
   i=0
