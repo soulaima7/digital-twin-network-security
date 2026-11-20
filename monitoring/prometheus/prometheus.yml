@@ -20,4 +20,3 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9200']
         labels: {node: exporter}
-        labels: {node: exporter}
