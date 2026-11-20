@@ -1,0 +1,29 @@
+# Supervision du jumeau (semaine 4) - lance par : make monitor-up
+# network_mode: host -> Prometheus joint directement le reseau de gestion
+# 172.20.20.0/24 (node_exporter) et l'exporter Python sur localhost:9200.
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: twin-prometheus
+    network_mode: host
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --web.listen-address=:9090
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: twin-grafana
+    network_mode: host
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GF_SERVER_HTTP_PORT: "3000"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/twin-security.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro

@@ -1,0 +1,131 @@
+# Regles d'alerte Grafana (cahier des charges 4.5) - 3 conditions -> Telegram
+apiVersion: 1
+groups:
+- orgId: 1
+  name: twin-security
+  folder: Twin
+  interval: 10s
+  rules:
+  - uid: twin-web-down
+    title: Site web indisponible
+    condition: C
+    for: 1m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: critical
+      projet: digital-twin
+    annotations:
+      summary: Le site http://10.10.20.10 ne repond plus depuis le client depuis 1 minute.
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: twin_web_up
+        instant: true
+        intervalMs: 1000
+        maxDataPoints: 43200
+    - refId: B
+      datasourceUid: __expr__
+      model:
+        refId: B
+        type: reduce
+        expression: A
+        reducer: last
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: B
+        conditions:
+        - evaluator:
+            type: lt
+            params:
+            - 1
+  - uid: twin-ban
+    title: IP bannie par l'auto-ban
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: warning
+      projet: digital-twin
+    annotations:
+      summary: 'Suricata + autoban.py viennent de bannir une IP ({{ $values.B }} ban(s) sur la derniere minute). Voir results/ban.log et le tableau de bord Twin security.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: increase(twin_bans_total[1m])
+        instant: true
+        intervalMs: 1000
+        maxDataPoints: 43200
+    - refId: B
+      datasourceUid: __expr__
+      model:
+        refId: B
+        type: reduce
+        expression: A
+        reducer: last
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: B
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+  - uid: twin-anomaly
+    title: Score d'anomalie IA eleve
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: warning
+      projet: digital-twin
+    annotations:
+      summary: 'Le score d''anomalie de l''IA depasse 0.7 (valeur : {{ $values.B }}).'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 300
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: twin_anomaly_score * on() twin_anomaly_model_ready
+        instant: true
+        intervalMs: 1000
+        maxDataPoints: 43200
+    - refId: B
+      datasourceUid: __expr__
+      model:
+        refId: B
+        type: reduce
+        expression: A
+        reducer: last
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: B
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0.7

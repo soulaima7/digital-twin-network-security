@@ -8,3 +8,7 @@ __pycache__/
 *.pyc
 secrets/*
 !secrets/.gitkeep
+# --- Phase 3 : supervision (a ajouter a la fin de .gitignore) ---
+monitoring/.env
+monitoring/grafana/provisioning/alerting/contactpoints.yml
+monitoring/grafana/dashboards/node-exporter-full.json

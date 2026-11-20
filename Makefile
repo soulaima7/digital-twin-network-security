@@ -43,3 +43,4 @@ graph:
 
 attack:
 	@echo "Suite d'attaques : prevue en semaine 5"
+include monitoring/monitoring.mk

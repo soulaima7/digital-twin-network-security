@@ -1,0 +1,22 @@
+# MODELE : monitoring/grafana/provisioning/alerting/contactpoints.yml est
+# genere par "make monitor-up" (monitoring/render-contactpoints.py + monitoring/.env) et n'est pas commite.
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: telegram-twin
+    receivers:
+      - uid: telegram-twin
+        type: telegram
+        settings:
+          bottoken: "${TELEGRAM_BOT_TOKEN}"
+          chatid: "${TELEGRAM_CHAT_ID}"
+          parse_mode: HTML
+        disableResolveMessage: false
+
+policies:
+  - orgId: 1
+    receiver: telegram-twin
+    group_by: ['alertname']
+    group_wait: 5s
+    group_interval: 30s
+    repeat_interval: 1h

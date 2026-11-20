@@ -1,0 +1,23 @@
+# Collecte Prometheus (cahier des charges 4.5 + Annexe C)
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # node_exporter des noeuds, joints par le reseau de gestion (contourne fw,
+  # c'est voulu : la supervision ne doit pas dependre du filtrage)
+  - job_name: nodes
+    static_configs:
+      - targets: ['172.20.20.2:9100']
+        labels: {node: fw}
+      - targets: ['172.20.20.3:9100']
+        labels: {node: web}
+      - targets: ['172.20.20.4:9100']
+        labels: {node: client}
+
+  # Exporter Python du jumeau (ai/exporter.py), lance sur l'hote
+  - job_name: twin
+    static_configs:
+      - targets: ['localhost:9200']
+        labels: {node: exporter}
+        labels: {node: exporter}
