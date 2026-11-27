@@ -1,0 +1,9 @@
+# Dependances de la brique IA (semaine 6) - ai/anomaly.py, advisor.py.
+# autoban.py (phase 2) et exporter.py (phase 3) n'utilisent QUE la
+# bibliotheque standard : ces paquets ne sont necessaires que sur l'HOTE,
+# pour l'entrainement et l'evaluation du modele de detection d'anomalies.
+# explain.py (bonus) n'utilise que urllib (standard) + Ollama (externe).
+scikit-learn>=1.3
+numpy>=1.24
+matplotlib>=3.6
+joblib>=1.3

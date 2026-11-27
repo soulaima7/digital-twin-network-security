@@ -12,3 +12,8 @@ secrets/*
 monitoring/.env
 monitoring/grafana/provisioning/alerting/contactpoints.yml
 monitoring/grafana/dashboards/node-exporter-full.json
+# --- Phase 4 : attaques + IA ---
+# Modele d'anomalie entraine (re-genere par make ai-train) et jeu
+# d'entrainement capture (instantane de logs/eve.json).
+ai/model/
+logs/eve_normal.json

@@ -1,0 +1,12 @@
+123456
+password
+admin
+root
+toor
+letmein
+changeme
+qwerty
+password1
+password123
+testuser
+12345678

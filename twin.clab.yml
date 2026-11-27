@@ -106,6 +106,10 @@ topology:
     attacker:
       image: twin/attacker
       mgmt-ipv4: 172.20.20.5
+      binds:
+        # Sorties brutes de la suite d'attaques (/opt/attack.sh, semaine 5) :
+        # nmap/hydra/ab + horodatages de debut, analyses ensuite par score.py.
+        - results:/results
       exec:
         - ip addr add 10.10.30.10/24 dev eth1
         - ip link set eth1 up
